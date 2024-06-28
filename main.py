@@ -1,8 +1,8 @@
 import asyncio
 import logging
-import time
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
+from api.api_controller import get_forecasts
 from database import prepare_db
 from settings import TIMETORUN, TOKEN
 from subscriber import SubscriberDB
@@ -58,11 +58,18 @@ async def unsubcribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-async def send_message(context: ContextTypes.DEFAULT_TYPE):
+async def send_forecast(context: ContextTypes.DEFAULT_TYPE):
     subscribers = await SubscriberDB.get_all_subscribers()
+    forecasts = await get_forecasts()
+    full_forecast = "Прогнозы погоды на сегодня\n\n"
+    for forecast in forecasts:
+        full_forecast += f"{forecast.author}\n"
+        full_forecast += f"Температура от {forecast.min_temp} ℃ до {forecast.max_temp} ℃\n"
+        full_forecast += f"{forecast.rain_forecast}\n\n"
+
     for subscriber in subscribers:
         logging.info(f"Weather sent to {subscriber.username}.")
-        await context.bot.send_message(chat_id=subscriber.chat_id, text="Сообщение с погодой")
+        await context.bot.send_message(chat_id=subscriber.chat_id, text=full_forecast)
 
 
 if __name__ == "__main__":
@@ -78,5 +85,5 @@ if __name__ == "__main__":
     for handler in handlers:
         application.add_handler(handler)
 
-    job_minute = job_queue.run_daily(send_message, TIMETORUN)  # type: ignore
+    job_minute = job_queue.run_daily(send_forecast, TIMETORUN)  # type: ignore
     application.run_polling()
