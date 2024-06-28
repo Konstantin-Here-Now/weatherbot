@@ -2,3 +2,5 @@ services:
   weatherbot:
     build: .
     env_file: ".env"
+    volumes:
+     - ./weatherbot.db:/app/weatherbot.db
