@@ -1,9 +1,10 @@
 import asyncio
 import logging
+import time
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 from database import prepare_db
-from settings import TOKEN
+from settings import TIMETORUN, TOKEN
 from subscriber import SubscriberDB
 from utils import get_chat_id, get_username
 
@@ -61,7 +62,7 @@ async def send_message(context: ContextTypes.DEFAULT_TYPE):
     subscribers = await SubscriberDB.get_all_subscribers()
     for subscriber in subscribers:
         logging.info(f"Weather sent to {subscriber.username}.")
-        await context.bot.send_message(chat_id=subscriber.chat_id, text="Ежеминутное сообщение")
+        await context.bot.send_message(chat_id=subscriber.chat_id, text="Сообщение с погодой")
 
 
 if __name__ == "__main__":
@@ -77,5 +78,5 @@ if __name__ == "__main__":
     for handler in handlers:
         application.add_handler(handler)
 
-    job_minute = job_queue.run_repeating(send_message, interval=60, first=10)  # type: ignore
+    job_minute = job_queue.run_daily(send_message, TIMETORUN)  # type: ignore
     application.run_polling()
